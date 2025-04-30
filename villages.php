@@ -29,7 +29,6 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
                     <th class='px-4 py-2 border'>Village</th>
                     <th class='px-4 py-2 border'>Ward</th>
                     <th class='px-4 py-2 border'>EB</th>
-                    
                     <th class='px-4 py-2 border'>Name</th>
                     <th class='px-4 py-2 border'>TRU</th>
                     <th class='px-4 py-2 border'>No_HH</th>
@@ -65,91 +64,94 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Tinkering India</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body class="bg-gray-100 p-6">
-<div class="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6">
-    <h1 class="text-2xl font-bold mb-4 text-center text-gray-700">Villages</h1>
+    <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-6">
+        <h1 class="text-2xl font-bold mb-4 text-center text-gray-700">Villages</h1>
 
-    <!-- Filter -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-        <div>
-            <label for="population" class="mr-2 font-medium text-gray-600">Minimum Population:</label>
-            <input type="number" id="population" class="border p-2 rounded w-40" placeholder="Enter min pop..." />
+        <!-- Filter -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+            <div>
+                <label for="population" class="mr-2 font-medium text-gray-600">Minimum Population:</label>
+                <input type="number" id="population" class="border p-2 rounded w-40" placeholder="Enter min pop..." />
+            </div>
+            <button id="downloadCSV" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Download CSV</button>
         </div>
-        <button id="downloadCSV" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Download CSV</button>
+
+        <!-- Data Table -->
+        <div id="villageTableContainer">
+            <!-- AJAX will load data here -->
+        </div>
     </div>
 
-    <!-- Data Table -->
-    <div id="villageTableContainer">
-        <!-- AJAX will load data here -->
-    </div>
-</div>
+    <script>
+        function getParams(overrides = {}) {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                state: params.get('state'),
+                district: params.get('district'),
+                subdistrict: params.get('subdistrict'),
+                population: overrides.population ?? '',
+                page: overrides.page ?? 1,
+                ajax: 1
+            };
+        }
 
-<script>
-function getParams(overrides = {}) {
-    const params = new URLSearchParams(window.location.search);
-    return {
-        state: params.get('state'),
-        district: params.get('district'),
-        subdistrict: params.get('subdistrict'),
-        population: overrides.population ?? '',
-        page: overrides.page ?? 1,
-        ajax: 1
-    };
-}
+        function loadVillages(page = 1) {
+            const populationInput = $('#population').val().trim();
+            const hasPopulationFilter = populationInput !== '';
 
-function loadVillages(page = 1) {
-    const populationInput = $('#population').val().trim();
-    const hasPopulationFilter = populationInput !== '';
-
-    const params = getParams({
-        page: page,
-        population: hasPopulationFilter ? populationInput : ''
-    });
-
-    $.get("villages.php", params, function (data) {
-        $('#villageTableContainer').html(data);
-    });
-}
-
-$(document).ready(function () {
-    loadVillages(1); // Load initially
-
-    $('#population').on('input', function () {
-        loadVillages(1); // Apply filter or clear filter
-    });
-
-    $(document).on('click', '.pagination-link', function (e) {
-        e.preventDefault();
-        const page = $(this).data('page');
-        loadVillages(page);
-    });
-
-    $('#downloadCSV').on('click', function () {
-        const rows = [];
-        $("#villageTableContainer table tbody tr").each(function () {
-            const row = [];
-            $(this).find('td').each(function () {
-                row.push('"' + $(this).text().replace(/"/g, '""') + '"');
+            const params = getParams({
+                page: page,
+                population: hasPopulationFilter ? populationInput : ''
             });
-            rows.push(row.join(","));
-        });
 
-        const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "villages_filtered.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-});
-</script>
+            $.get("villages.php", params, function(data) {
+                $('#villageTableContainer').html(data);
+            });
+        }
+
+        $(document).ready(function() {
+            loadVillages(1); // Load initially
+
+            $('#population').on('input', function() {
+                loadVillages(1); // Apply filter or clear filter
+            });
+
+            $(document).on('click', '.pagination-link', function(e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                loadVillages(page);
+            });
+
+            $('#downloadCSV').on('click', function() {
+                const rows = [];
+                $("#villageTableContainer table tbody tr").each(function() {
+                    const row = [];
+                    $(this).find('td').each(function() {
+                        row.push('"' + $(this).text().replace(/"/g, '""') + '"');
+                    });
+                    rows.push(row.join(","));
+                });
+
+                const csvContent = "data:text/csv;charset=utf-8," + rows.join("\n");
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "villages_filtered.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
 </body>
+
 </html>
